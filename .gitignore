@@ -1,3 +1,5 @@
 /build/
 /telescope_distance/telescope_distance.egg-info/
 /dist/
+/telescope_distance.egg-info/
+/.idea/
