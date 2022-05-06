@@ -1,20 +1,23 @@
 from scipy.cluster import hierarchy
 from multiprocessing import Pool
 import numpy as np
+from telescope_distance.utils import utils
 
 
-def agglomerative_clustering(series_list, distance_fn, method='single', pool_size=1):
+def agglomerative_clustering(metric, series_list=None, method='single', pool_size=1):
     """ Hierarchical clustering for time-series.
 
     Parameters
     ----------
-    series_list: list, ndarray
+    metric: callable, ndarray
+        distance function to compute the pairwise distance between timeseries.
+        Or a condensed distance ndarray of dissimilarities.
+
+    series_list : list, ndarray, None
         list of ndarray of shape=(sz, d)
         ndarray of shape=(n_ts, sz, d)
         Time series dataset.
-
-    distance_fn: callable
-        distance function to compute the pairwise distance between timeseries.
+        If metric is given in the form of a distance matrix, series_list is no longer required
 
     method: str
         Which linkage criterion to use for agglomerative clustering.
@@ -24,23 +27,12 @@ def agglomerative_clustering(series_list, distance_fn, method='single', pool_siz
 
     Returns
     -------
-    labels : array of shape (n_ts,)
-        Index of the cluster each sample belongs to.
+    ndarray of shape (n_ts,)
+        Cluster assignment
     """
-    n = len(series_list)
-    distance_mat = np.zeros(n * (n - 1) // 2)
-    args = []
-    idx_mapping = {}
-    idx_counter = 0
-    for i in range(n):
-        for j in range(i + 1, n):
-            args.append((series_list[i], series_list[j],))
-            idx_mapping[idx_counter] = n * i + j - ((i + 2) * (i + 1)) // 2
-            idx_counter += 1
-    pool = Pool(pool_size)
-    distance_arr = pool.starmap(distance_fn, args)
-    for i, val in enumerate(distance_arr):
-        distance_mat[idx_mapping[i]] = val
+    assert callable(metric) or isinstance(metric, np.ndarray), 'metric should be ndarray or a callable'
+
+    distance_mat = utils.pairwise_distance(series_list, metric, True, pool_size) if callable(metric) else metric
 
     linkage_matrix = hierarchy.linkage(distance_mat, method)
     clustering_labels = hierarchy.fcluster(linkage_matrix, 2, criterion='maxclust')

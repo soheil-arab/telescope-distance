@@ -7,7 +7,7 @@ from telescope_distance.generators import generators
 import numpy as np
 from scipy import stats
 import os.path
-from telescope_distance.clustering import agglomerative
+from telescope_distance.clustering import agglomerative, kmedoids
 from telescope_distance.telescope import TelescopeDistance
 
 
@@ -55,6 +55,11 @@ if __name__ == "__main__":
                                         max_iter=max_iter)
     TD = TelescopeDistance(clf_constructor, weights_fn)
 
-    clusters = agglomerative.agglomerative_clustering(data, TD.distance,pool_size=3)
+    clusters = agglomerative.agglomerative_clustering(TD.distance, data, pool_size=3)
     print(clusters)
 
+    km_clusters = kmedoids.kmedoids_clustering(2, TD.distance, data, 3)
+    print(km_clusters)
+
+    consistent_clustering = kmedoids.consistent_kmedoids(2, TD.distance, data, 3)
+    print(consistent_clustering)
